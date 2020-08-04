@@ -2,7 +2,7 @@
 
 Dockerized reviewboard. This container follows Docker's best practices, and DOES NOT include sshd, supervisor, apache2, or any other services except the reviewboard itself which is run with ```uwsgi```.
 
-The requirements are PostgreSQL and memcached, you can use either dockersized versions of them, or external ones, e.g. installed on the host machine, or even third-party machines.
+The requirements are PostgreSQL or Mysql and memcached, you can use either dockersized versions of them, or external ones, e.g. installed on the host machine, or even third-party machines.
 
 ### Disclaimer
 I'm neither a user nor maintainer of reviewboard itself. 
@@ -82,11 +82,12 @@ This container has one volume mount-point:
 
 The container accepts the following environment variables:
 
-- ```PGHOST``` - the postgres host. Defaults to the value of ```PG_PORT_5432_TCP_ADDR```, provided by the ```pg``` linked container.
-- ```PGPORT``` - the postgres port. Defaults to the value of ```PG_PORT_5432_TCP_PORT```, provided by the ```pg``` linked container, or 5432, if it's empty.
-- ```PGUSER``` - the postgres user. Defaults to ```reviewboard```.
-- ```PGDB``` - the postgres database. Defaults to ```reviewboard```.
-- ```PGPASSWORD``` - the postgres password. Defaults to ```reviewboard```.
+
+- ```DB_MYSQL``` or ```DB_POSTGRES``` -  set the hostname or IP address of the MySQL or PostgreSQL host, respectively
+- ```DB_PORT``` - the database connection port. If unspecified, it will default to the regular connection ports: 3306 for MySQL, 5432 for PostgreSQL
+- ```DB_USER``` - the database user. Defaults to ```reviewboard```.
+- ```DB_DATABASE``` - the database. Defaults to ```reviewboard```.
+- ```DB_PASSWORD``` - the postgres password. Defaults to ```reviewboard```.
 - ```MEMCACHED``` - memcache address in format ```host:port```. Defaults to the value from linked ```memcached``` container.
 - ```DOMAIN``` - defaults to ```localhost```.
 - ```DEBUG``` - if set, the django server will be launched in debug mode.

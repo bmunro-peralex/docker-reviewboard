@@ -1,12 +1,26 @@
 #!/bin/bash
-PGUSER="${PGUSER:-reviewboard}"
-PGPASSWORD="${PGPASSWORD:-reviewboard}"
-PGDB="${PGDB:-reviewboard}"
 
-# Get these variables either from PGPORT and PGHOST, or from
-# linked "pg" container.
-PGPORT="${PGPORT:-$( echo "${PG_PORT_5432_TCP_PORT:-5432}" )}"
-PGHOST="${PGHOST:-$( echo "${PG_PORT_5432_TCP_ADDR:-127.0.0.1}" )}"
+if [ "$DB_MYSQL" ]; then
+	adapter='mysql'
+	host="$DB_MYSQL"
+    port="${DB_PORT:-$( echo "${MYSQL_PORT_3306_TCP_PORT:-3306}" )}"
+elif [ "$DB_POSTGRES" ]; then
+	adapter='postgresql'
+	host="$DB_POSTGRES"
+    port="${PGPORT:-$( echo "${POSTGRES_PORT_5432_TCP_PORT:-5432}" )}"
+else
+	echo >&2
+	echo >&2 'error: missing DB_MYSQL or DB_POSTGRES environment variables'
+	echo >&2
+    exit 1
+fi
+
+DB_ADAPTER="$adapter"
+DB_HOST="$host"
+DB_PORT="$port"
+DB_USER="${DB_USER:-reviewboard}"
+DB_PASSWORD="${DB_PASSWORD:-reviewboard}"
+DB_DATABASE="${DB_DATABASE:-reviewboard}"
 
 # Get these variable either from MEMCACHED env var, or from
 # linked "memcached" container.
@@ -15,16 +29,26 @@ MEMCACHED="${MEMCACHED:-$( echo "${MEMCACHED_LINKED_NOTCP:-127.0.0.1}" )}"
 
 DOMAIN="${DOMAIN:localhost}"
 
-if [[  "${WAIT_FOR_POSTGRES}" = "true" ]]; then
+if [[  "${WAIT_FOR_DB}" = "true" ]]; then
+    if [ -n "$DB_POSTGRES" ]; then
+        echo "Waiting for Postgres readiness..."
+        export DB_USER DB_HOST DB_PORT DB_PASSWORD
 
-    echo "Waiting for Postgres readiness..."
-    export PGUSER PGHOST PGPORT PGPASSWORD
+        until psql "${PGDB}"; do
+            echo "Postgres is unavailable - sleeping"
+            sleep 1
+        done
+        echo "Postgres is up!"
+    elif [ -n "$DB_MYSQL" ]; then
+        echo "Waiting for mysql readiness..."
+        export DB_USER DB_HOST DB_PORT DB_PASSWORD
 
-    until psql "${PGDB}"; do
-        echo "Postgres is unavailable - sleeping"
-        sleep 1
-    done
-    echo "Postgres is up!"
+        until echo '\q' | mysql -h"$DB_HOST" -P"$DB_PORT" -u"$DB_USER" -p"$DB_PASSWORD" $DB_DATABASE; do
+            >&2 echo "MySQL is unavailable - sleeping"
+            sleep 1
+        done
+        echo "mysql is up!"
+    fi
 
 fi
 
@@ -47,14 +71,14 @@ if [[ ! -d /var/www/reviewboard ]]; then
         --domain-name="$DOMAIN" \
         --site-root="$SITE_ROOT" \
         --static-url=static/ --media-url=media/ \
-        --db-type=postgresql \
-        --db-name="$PGDB" \
-        --db-host="$PGHOST" \
-        --db-user="$PGUSER" \
-        --db-pass="$PGPASSWORD" \
+        --db-type="${DB_ADAPTER}" \
+        --db-name="$DB_DATABASE" \
+        --db-host="$DB_HOST" \
+        --db-user="$DB_USER" \
+        --db-pass="$DB_PASSWORD" \
         --cache-type=memcached --cache-info="$MEMCACHED" \
         --web-server-type=lighttpd --web-server-port=8000 \
-        --admin-user=admin --admin-password=admin --admin-email=admin@example.com \
+        --admin-user=admin --admin-password=admin --admin-email=admin@peralex.com \
         /var/www/reviewboard/
 fi
 
