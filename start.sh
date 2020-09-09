@@ -77,12 +77,28 @@ if [[ ! -d /var/www/reviewboard ]]; then
         --db-user="$DB_USER" \
         --db-pass="$DB_PASSWORD" \
         --cache-type=memcached --cache-info="$MEMCACHED" \
-        --web-server-type=lighttpd --web-server-port=8000 \
+        --web-server-type=apache --web-server-port=8000 \
         --admin-user=admin --admin-password=admin --admin-email=admin@peralex.com \
         /var/www/reviewboard/
 fi
 
-/upgrade-site.py /var/www/reviewboard/rb-version /var/www/reviewboard
+chown -R www-data:root /var/www/reviewboard/
+
+cp /var/www/reviewboard/conf/apache-wsgi.conf /etc/apache2/sites-available/000-default.conf
+sed -i "s/ServerName/#ServerName/g" /etc/apache2/sites-available/000-default.conf
+sed -i "s/8000/80/g" /etc/apache2/sites-available/000-default.conf
+
+service apache2 reload
+
+if [ -n "$INTERNAL_FONT_FIX" ]; then
+    ### The troublesome issue with italic fonts (comments in code in particular) on ReviewBoard,                                                                               ### 
+    ### where lower case l characters look like upper case L characters has been resolved by changing the font for comments to normal (non-italic).                            ###
+    ### The particular issue is with the Consolas italic font, which is the default proportional font in Chrome (but apparently not in Firefox, which still uses Courier New). ###
+    cp /var/www/reviewboard/htdocs/static/rb/css/syntax.css /var/www/reviewboard/htdocs/static/rb/css/syntax.css.bak
+    sed -i '/.cm-s-rb .cm-comment *{/,/}/{s/\(font-style: *\)italic;/\1normal;/}' /var/www/reviewboard/htdocs/static/rb/css/syntax.css
+fi
+
+python upgrade-site.py /var/www/reviewboard/rb-version /var/www/reviewboard
 
 if [[ "${DEBUG}" ]]; then
     sed -i 's/DEBUG *= *False/DEBUG=True/' "$CONFFILE"
@@ -91,4 +107,4 @@ fi
 
 export SITE_ROOT
 
-exec uwsgi --ini /uwsgi.ini
+exec apachectl -D FOREGROUND
