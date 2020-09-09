@@ -9,7 +9,9 @@ RUN apt-get update -y && \
         uwsgi uwsgi-plugin-python \
         postgresql-client mysql-client \
         python-psycopg2 python-mysqldb python-ldap \
-        git-core mercurial subversion python-svn && \
+        git-core mercurial subversion python-svn libexpat1 \
+		apache2 apache2-utils libapache2-mod-wsgi \
+		&& \
         rm -rf /var/lib/apt/lists/*
 
 RUN set -ex; \
@@ -30,6 +32,6 @@ RUN chmod +x /start.sh /shell.sh /upgrade-site.py
 
 VOLUME /var/www/
 
-EXPOSE 8000
+EXPOSE 80
 
 CMD /start.sh
