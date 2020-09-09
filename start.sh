@@ -78,7 +78,7 @@ if [[ ! -d /var/www/reviewboard ]]; then
         --db-pass="$DB_PASSWORD" \
         --cache-type=memcached --cache-info="$MEMCACHED" \
         --web-server-type=apache --web-server-port=8000 \
-        --admin-user=admin --admin-password=admin --admin-email=admin@peralex.com \
+        --admin-user=admin --admin-password=admin --admin-email=admin@example.com \
         /var/www/reviewboard/
 fi
 
