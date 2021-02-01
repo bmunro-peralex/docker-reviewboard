@@ -1,7 +1,7 @@
 FROM ubuntu:18.04
 LABEL maintainer="bmunro@peralex.com"
 
-ENV RB_VERSION 3.0.18
+ENV RB_VERSION 3.0.20
 RUN apt-get update -y && \
     apt-get install --no-install-recommends -y \
         build-essential python-dev libffi-dev libmysqlclient-dev libssl-dev patch \
